@@ -41,7 +41,14 @@ Plusieurs provideurs d'API sont supportés : tous les providers compatibles Open
 L'utilisation nécessite de traiter de grand contexte si vous traiter des videéo longue, le modèle doit aussi être en capacité de le supporter la largeur du contexte est donc un critère a également prendre en compte. Les modèles dits de "raisonnement" n'apportent aucune plus value à byteou-netzwerkstatt
 En date de Mai 2025 les deux modèles recommandés sont Claude3.7 ou Gemini2.0 Flash.  
 
-## Chargement d'un environnement uv avec les dépendances python
+## Installation
+
+```bash
+git clone https://github.com/mollierj-devel/byteou-netzwerkstatt.git
+cd byteou-netzwerkstatt
+```
+
+### Chargement d'un environnement uv avec les dépendances python
 
 ```bash
 uv venv .venv
@@ -49,7 +56,9 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 chmod +x ./byteou-netzwerkstatt.py
 ```
-## Utilisation
+
+### Utilisation
+
 ```bash
 python -m byteou-netzwerkstatt -vvv -help
 #ou
