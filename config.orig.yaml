@@ -1,0 +1,23 @@
+# Configuration de l'application byteou-netzwerkstatt
+
+# Paramètres de l'API OpenAI
+openai:
+  api_key: "VOTRE_CLE_ICI" 
+  base_url: "https://api.openai.com/v1/"
+  model: "gpt-4o"
+
+
+gemini:
+  api_key: "VOTRE_CLE_ICI" 
+  model: "gemini-2.5-pro-preview-05-06"
+  # 
+
+ai:
+  "provider": "openai" 
+
+# Paramètres de l'API YouTube
+youtube:
+  languages: ["fr", "en"]  # Priorité français, puis anglais
+
+# Répertoire des prompts
+prompts_dir: "prompts"

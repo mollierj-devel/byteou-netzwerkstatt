@@ -33,7 +33,7 @@ Une extention permettant d'exloiter l'inférence, les similarité cosinus sont �
 # Techniquement comment on s'en sert
 
 ## Configuration des paramètres :
-config.yaml
+Créer un fichier config.yaml à partir de config.orig
 
 Plusieurs provideurs d'API sont supportés : tous les providers compatibles OpenAI (testé via un proxy type LLM et via l'API perplexity) ainsi que google Gemini.
 
