@@ -1,0 +1,16 @@
+Crée un document de synthèse.
+Pour cela :
+1. Analyse l'ensemble des documents fournis sur le sujet.
+2. Identifie les concepts clés, les arguments principaux et les informations essentielles présents dans ces documents.
+3. Organise ces informations de manière cohérente selon les thématiques suivantes :
+   - Définitions et concepts fondamentaux
+   - Principales problématiques identifiées
+   - Solutions ou approches proposées
+   - Points de consensus et de désaccord entre les sources
+4. Présente une synthèse structurée qui :
+   - Maintient l'objectivité
+   - Cite précisément les sources pour chaque information importante
+   - Met en évidence les relations entre les différentes idées
+   - Identifie les zones d'incertitude ou les questions non résolues
+1. Termine par 5 hashtags en français. Un seul mot correspondant au contenu. La mise en forme doit être une simple liste de hashtags séparés par un espace. Si un seul mot ne permet pas d'être suffisamment précis, concatène le. Si un acronyme est important, utilise le.
+Format attendu : document Markdown structuré. Les titres doivent démarrer au niveau Titre 2 (##).
