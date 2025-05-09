@@ -4,6 +4,11 @@ out/
 makingof/
 video_metadata.json
 config.yaml
+byteou-netzwerkstatt.laststable.py
+prompts/
+
+#MacOS
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
