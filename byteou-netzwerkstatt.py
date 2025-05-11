@@ -639,12 +639,13 @@ class Processor:
             logger.error(f"Erreur lors de la recherche des IDs YouTube: {e}")
             return []
     
-    def generate_metadata_header(self, video_id: str) -> str:
+    def generate_metadata_header(self, video_id: str, metadata: Dict[str, str]) -> str:
         """
         Génère un en-tête de métadonnées pour le fichier maître au format YAML frontmatter.
         
         Args:
             video_id: Identifiant de la vidéo YouTube.
+            metadata: Dictionnaire contenant les métadonnées de la vidéo.
             
         Returns:
             En-tête formaté avec les métadonnées.
@@ -652,8 +653,7 @@ class Processor:
         # Obtenir la date du jour au format YYYY-MM-DD
         current_date = datetime.now().strftime("%Y-%m-%d")
         
-        # Récupérer le titre de la vidéo depuis les métadonnées
-        metadata = self.transcript_downloader.get_video_metadata(video_id)
+        # Utiliser les métadonnées fournies
         video_title = metadata.get('title', f"Video {video_id}")
         safe_title = re.sub(r"[^\w\s\-']", "", video_title).strip()
         video_author = metadata.get('author', "")
@@ -687,6 +687,11 @@ https://www.youtube.com/watch?v={video_id}
         results = {}
         
         try:
+            # Récupérer les métadonnées une seule fois
+            logger.debug(f"Récupération des métadonnées pour {video_id}")
+            metadata = self.transcript_downloader.get_video_metadata(video_id)
+            results["metadata"] = metadata
+            
             # Étape 1: Télécharger la transcription
             logger.debug(f"Étape 1: Téléchargement de la transcription")
             transcript_file = self.transcript_downloader.save_transcript(video_id, self.output_dir)
@@ -792,9 +797,8 @@ https://www.youtube.com/watch?v={video_id}
         logger.info(f"Consolidation des résultats pour {video_id}")
         
         try:
-
-            # Récupérer toutes les métadonnées
-            metadata = self.transcript_downloader.get_video_metadata(video_id)
+            # Utiliser les métadonnées déjà récupérées
+            metadata = results["metadata"]
 
             # Extraire uniquement le titre et le sécurise 
             video_title = metadata['title']
@@ -809,7 +813,7 @@ https://www.youtube.com/watch?v={video_id}
                 # Titre
                 #JMT master.write(f"# Document maître pour la vidéo {video_id}\n\n")
                 
-                master_header = self.generate_metadata_header(video_id)
+                master_header = self.generate_metadata_header(video_id, metadata)
                 master.write(master_header)
                 master.write("\n\n")
 
