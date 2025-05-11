@@ -577,6 +577,11 @@ class Processor:
         self.input_dir = input_dir
         self.output_dir = output_dir
         
+        # Variables pour le suivi du temps et des tokens
+        self.video_start_time = time.time()
+        self.previous_tokens_input = 0
+        self.previous_tokens_output = 0
+        
         # Initialiser les composants
         self.transcript_downloader = TranscriptDownloader(config.youtube_languages)
         
@@ -699,7 +704,7 @@ https://www.youtube.com/watch?v={video_id}
 
             # Mettre à jour la progression à 10% après la sauvegarde de la transcription
             if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
-                self.progress.update(self.current_video_task, completed=10, description=f"[cyan]Transcription sauvegardée pour {video_id}")
+                self.progress.update(self.current_video_task, completed=10, description=f"[cyan]{self.current_video_number}/{self.total_videos} Traitement de {video_id} : {'Transcription sauvegardée':<30}")
 
             # Lire la transcription
             with open(transcript_file, 'r', encoding='utf-8') as file:
@@ -722,7 +727,7 @@ https://www.youtube.com/watch?v={video_id}
             
             # Mettre à jour la progression à 40% après la génération du résumé
             if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
-                self.progress.update(self.current_video_task, completed=40, description=f"[cyan]Résumé généré pour {video_id}")
+                self.progress.update(self.current_video_task, completed=40, description=f"[cyan]{self.current_video_number}/{self.total_videos} Traitement de {video_id} : {'Génération du résumé':<30}")
             
             # Notes Zettelkasten
             logger.debug(f"Étape 2.2: Génération des notes Zettelkasten")
@@ -738,7 +743,7 @@ https://www.youtube.com/watch?v={video_id}
             
             # Mettre à jour la progression à 70% après la génération des notes Zettelkasten
             if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
-                self.progress.update(self.current_video_task, completed=70, description=f"[cyan]Notes Zettelkasten générées pour {video_id}")
+                self.progress.update(self.current_video_task, completed=70, description=f"[cyan]{self.current_video_number}/{self.total_videos} Traitement de {video_id} : {'Génération de notes Zettelkasten':<30}")
             
             # Notes enrichies
             logger.debug(f"Étape 2.3: Génération des notes enrichies")
@@ -756,7 +761,7 @@ https://www.youtube.com/watch?v={video_id}
             
             # Mettre à jour la progression à 100% après la génération des notes enrichies
             if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
-                self.progress.update(self.current_video_task, completed=100, description=f"[cyan]Notes enrichies générées pour {video_id}")
+                self.progress.update(self.current_video_task, completed=100, description=f"[cyan]{self.current_video_number}/{self.total_videos} Traitement de {video_id} : {'Génération de notes enrichies':<30}")
             
             # Étape 3: Extraire les concepts
             logger.debug(f"Étape 3: Extraction des concepts")
@@ -993,21 +998,41 @@ def main():
             ) as progress:
                 # Stocker la référence à l'objet progress dans le processeur
                 processor.progress = progress
-                task = progress.add_task("[cyan]Traitement des vidéos...", total=len(video_ids))
                 
-                for video_id in video_ids:
-                    # Créer une tâche pour cette vidéo spécifique
-                    video_task = progress.add_task(f"[cyan]Traitement de {video_id}...", total=100, visible=True)
+                # Compteur pour suivre le numéro de la vidéo en cours
+                for i, video_id in enumerate(video_ids, 1):
+                    # Réinitialiser le temps de démarrage pour cette vidéo
+                    processor.video_start_time = time.time()
+                    
+                    # Créer une tâche pour cette vidéo spécifique avec le format demandé
+                    # Utiliser une largeur fixe pour l'étape en cours pour que la barre ne change pas de position
+                    video_task = progress.add_task(f"[cyan]{i}/{len(video_ids)} Traitement de {video_id} : {'':<30}", total=100, visible=True)
                     processor.current_video_task = video_task
+                    processor.current_video_number = i
+                    processor.total_videos = len(video_ids)
                     
                     try:
+                        # Mettre à jour la description avec l'étape initiale
+                        progress.update(video_task, description=f"[cyan]{i}/{len(video_ids)} Traitement de {video_id} : {'Initialisation':<30}")
                         processor.process_video(video_id)
                     except Exception as e:
                         console.print(f"[red]Erreur lors du traitement de {video_id}: {e}[/red]")
                     
+                    # Calculer la durée et les tokens pour cette vidéo
+                    video_duration = time.time() - processor.video_start_time
+                    video_tokens_input = processor.ai_generator.tokens_input - processor.previous_tokens_input
+                    video_tokens_output = processor.ai_generator.tokens_output - processor.previous_tokens_output
+                    video_tokens_total = video_tokens_input + video_tokens_output
+                    
+                    # Mettre à jour les tokens précédents pour la prochaine vidéo
+                    processor.previous_tokens_input = processor.ai_generator.tokens_input
+                    processor.previous_tokens_output = processor.ai_generator.tokens_output
+                    
                     # Compléter la tâche de la vidéo
-                    progress.update(video_task, completed=100)
-                    progress.advance(task)
+                    progress.update(video_task, completed=100, description=f"[cyan]{i}/{len(video_ids)} Traitement de {video_id} : {'Terminé':<30}")
+                    
+                    # Afficher les informations de tokens et de temps pour cette vidéo
+                    console.print(f"[green]Vidéo {i}/{len(video_ids)} ({video_id}) terminée en {video_duration:.2f}s - Tokens: {video_tokens_input} entrée, {video_tokens_output} sortie, {video_tokens_total} total[/green]")
         
 
 
