@@ -457,7 +457,7 @@ class ConceptExtractor:
             marker_positions = [(m.start(), m.group(1).strip()) for m in concept_markers]
             
             if not marker_positions:
-                logger.warning(f"Aucun markeur de concept trouvé dans {zettelkasten_file}. Votre modèle est peut être trop faible ?")
+                logger.warning(f"Aucun markeur de concept trouvé dans {zettelkasten_file}. Votre modèle est peut être trop faible pour respecter les prompts ?")
                 logger.trace("Vérifier le format du contenu généré")
                 return []
                 
@@ -485,7 +485,11 @@ class ConceptExtractor:
                 concepts.append(concept)
                 logger.debug(f"Concept extrait: {title}")
             
-            logger.info(f"{len(concepts)} concepts extraits avec succès")
+            
+            if len(concepts)>15:
+                logger.warning(f"{len(concepts)} markeur de concept trouvés dans {zettelkasten_file}. Ce nombre est anormalement elevé, votre modèle est peut être trop faible pour respecter les prompts ?")
+            else:
+                logger.info(f"{len(concepts)} concepts extraits avec succès")
             return concepts
             
         except Exception as e:
