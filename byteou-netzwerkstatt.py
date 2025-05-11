@@ -692,6 +692,10 @@ https://www.youtube.com/watch?v={video_id}
             transcript_file = self.transcript_downloader.save_transcript(video_id, self.output_dir)
             results["transcript_file"] = transcript_file
 
+            # Mettre à jour la progression à 10% après la sauvegarde de la transcription
+            if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
+                self.progress.update(self.current_video_task, completed=10, description=f"[cyan]Transcription sauvegardée pour {video_id}")
+
             # Lire la transcription
             with open(transcript_file, 'r', encoding='utf-8') as file:
                 transcript = file.read()
@@ -711,6 +715,10 @@ https://www.youtube.com/watch?v={video_id}
             results["summary_file"] = str(summary_file)
             logger.trace(f"Résumé sauvegardé dans {summary_file}")
             
+            # Mettre à jour la progression à 40% après la génération du résumé
+            if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
+                self.progress.update(self.current_video_task, completed=40, description=f"[cyan]Résumé généré pour {video_id}")
+            
             # Notes Zettelkasten
             logger.debug(f"Étape 2.2: Génération des notes Zettelkasten")
             zettelkasten = self.ai_generator.generate_zettelkasten(
@@ -722,6 +730,10 @@ https://www.youtube.com/watch?v={video_id}
                 file.write(zettelkasten)
             results["zettelkasten_file"] = str(zettelkasten_file)
             logger.trace(f"Notes Zettelkasten sauvegardées dans {zettelkasten_file}")
+            
+            # Mettre à jour la progression à 70% après la génération des notes Zettelkasten
+            if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
+                self.progress.update(self.current_video_task, completed=70, description=f"[cyan]Notes Zettelkasten générées pour {video_id}")
             
             # Notes enrichies
             logger.debug(f"Étape 2.3: Génération des notes enrichies")
@@ -736,6 +748,10 @@ https://www.youtube.com/watch?v={video_id}
                 file.write(notes)
             results["notes_file"] = str(notes_file)
             logger.trace(f"Notes enrichies sauvegardées dans {notes_file}")
+            
+            # Mettre à jour la progression à 100% après la génération des notes enrichies
+            if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
+                self.progress.update(self.current_video_task, completed=100, description=f"[cyan]Notes enrichies générées pour {video_id}")
             
             # Étape 3: Extraire les concepts
             logger.debug(f"Étape 3: Extraction des concepts")
@@ -971,14 +987,22 @@ def main():
                 TimeRemainingColumn(),
                 console=console
             ) as progress:
+                # Stocker la référence à l'objet progress dans le processeur
+                processor.progress = progress
                 task = progress.add_task("[cyan]Traitement des vidéos...", total=len(video_ids))
                 
                 for video_id in video_ids:
-                    progress.update(task, description=f"[cyan]Traitement de {video_id}...")
+                    # Créer une tâche pour cette vidéo spécifique
+                    video_task = progress.add_task(f"[cyan]Traitement de {video_id}...", total=100, visible=True)
+                    processor.current_video_task = video_task
+                    
                     try:
                         processor.process_video(video_id)
                     except Exception as e:
                         console.print(f"[red]Erreur lors du traitement de {video_id}: {e}[/red]")
+                    
+                    # Compléter la tâche de la vidéo
+                    progress.update(video_task, completed=100)
                     progress.advance(task)
         
 
