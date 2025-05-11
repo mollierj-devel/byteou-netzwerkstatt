@@ -5,7 +5,7 @@ makingof/
 video_metadata.json
 config.yaml
 byteou-netzwerkstatt.laststable.py
-prompts/
+config.yaml
 
 #MacOS
 .DS_Store
