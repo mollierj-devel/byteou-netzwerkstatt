@@ -419,10 +419,15 @@ class AIGenerator:
         except Exception as e:
             logger.warning(f"Impossible de lire le fichier de notes pour {video_id}: {e}")
         
-        #JMT logger.trace(f"Contenu enrichi: {enhanced_content[:200]}...")
-        enhanced_content += f"\n\**document :** \"{transcript}\""
-        #JMT logger.trace(f"Contenu enrichi: {enhanced_content}")
-        return self.generate_content(prompt, enhanced_content)
+
+        if (os.path.getsize(note_file_path) == 0):
+            logger.debug(f"{note_file_path} est vide, il n'y aura pas de traitement des notes enrichies")
+            enhanced_content = f"\n\**document :** \"{transcript}\""
+            return self.generate_content("écrire \"# Synthèse.\". Produit un résumé excecutif sur le contenu de **document :** en deux phrases. Style direct et concis. Présente directement le contenu.", enhanced_content)
+            #return "Aucune note à traiter"
+        else:
+            enhanced_content += f"\n\**document :** \"{transcript}\""
+            return self.generate_content(prompt, enhanced_content)
 
 # Extraction et gestion des concepts
 class ConceptExtractor:
