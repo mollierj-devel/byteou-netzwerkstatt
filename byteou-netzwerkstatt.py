@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 byteou-netzwerkstatt
-
 Génère des résumés et des concepts "à la Zettelkasten" depuis les transcriptions de vidéos YouTube.
 """
 
@@ -9,7 +8,7 @@ import argparse
 import os
 import re
 import sys
-import yaml
+import yaml # type: ignore
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -17,15 +16,15 @@ from datetime import datetime
 
 # Bibliothèques externes requises
 try:
-    from openai import OpenAI
-    import google.generativeai as genai
-    from youtube_transcript_api import YouTubeTranscriptApi
-    import yt_dlp
-    from rich import print as rprint
-    from rich.console import Console
-    from rich.panel import Panel
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn
-    from loguru import logger
+    from openai import OpenAI # type: ignore
+    import google.generativeai as genai # type: ignore
+    from youtube_transcript_api import YouTubeTranscriptApi # type: ignore
+    import yt_dlp # type: ignore
+    from rich import print as rprint # type: ignore 
+    from rich.console import Console # type: ignore
+    from rich.panel import Panel # type: ignore
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeRemainingColumn # type: ignore
+    from loguru import logger # type: ignore
 except ImportError:
     print("Certaines bibliothèques requises ne sont pas installées.")
     sys.exit(1)
@@ -101,11 +100,17 @@ class Config:
         try:
             prompt_path = Path(dir_path)
             if not prompt_path.exists():
-                logger.warning(f"Le répertoire {dir_path} n'existe pas, création des prompts par défaut")
-                self._create_default_prompts(dir_path)
+                logger.error(f"Le répertoire {dir_path} n'existe pas. Utilisez l'option -p/--prompts-dir pour spécifier un emplacement alternatif.")
+                sys.exit(1)
+                return f"Le répertoire {dir_path} n'existe pas. Utilisez l'option -p/--prompts-dir pour spécifier un emplacement alternatif."
                 
             # Charger tous les fichiers .txt du répertoire
-            for file_path in Path(dir_path).glob("*.txt"):
+            prompt_files = list(Path(dir_path).glob("*.txt"))
+            if not prompt_files:
+                logger.warning(f"Aucun fichier prompt trouvé dans {dir_path}. Utilisez l'option -p/--prompts-dir pour spécifier un emplacement alternatif.")
+                return
+                
+            for file_path in prompt_files:
                 prompt_name = file_path.stem.upper()
                 with open(file_path, "r", encoding="utf-8") as file:
                     self.prompts[f"PROMPT_{prompt_name}"] = file.read().strip()
@@ -114,87 +119,8 @@ class Config:
                 
             logger.info(f"{len(self.prompts)} prompts chargés")
         except Exception as e:
-            logger.error(f"Erreur lors du chargement des prompts: {e}")
-            self._create_default_prompts(dir_path)
-    
-    def _create_default_prompts(self, dir_path: str) -> None:
-        """Crée les prompts par défaut si le répertoire n'existe pas."""
-        try:
-            os.makedirs(dir_path, exist_ok=True)
-            
-            # Créer les prompts par défaut
-            prompts = {
-                "synthese.txt": """
-Crée un document de synthèse.
-Pour cela :
-1. Analyse l'ensemble des documents fournis sur le sujet.
-2. Identifie les concepts clés, les arguments principaux et les informations essentielles présents dans ces documents.
-3. Organise ces informations de manière cohérente selon les thématiques suivantes :
-   - Définitions et concepts fondamentaux
-   - Principales problématiques identifiées
-   - Solutions ou approches proposées
-   - Points de consensus et de désaccord entre les sources
-4. Présente une synthèse structurée qui :
-   - Maintient l'objectivité
-   - Cite précisément les sources pour chaque information importante
-   - Met en évidence les relations entre les différentes idées
-   - Identifie les zones d'incertitude ou les questions non résolues
-1. Termine par 5 hashtags en français. Un seul mot correspondant au contenu. La mise en forme doit être une simple liste de hashtags séparés par un espace. Si un seul mot ne permet pas d'être suffisamment précis, concatène le. Si un acronyme est important, utilise le.
-Format attendu : document Markdown structuré. Les titres doivent démarrer au niveau Titre 2 (##).
-                """,
-                
-                "zettelkasten.txt": """
-Tu es spécialiste de la méthode Zettelkasten et tu es un expert à identifier les concepts.
-Ton rôle est d'identifier dans le transcript joint les concepts. Dans un premier temps, fais-moi une liste des concepts que tu trouves et ajoute une citation et mets une phrase d'explication. 
-Fais des bons titres. Termine chaque concept par 5 hashtags et 5 propositions alternatives de titres.
-Formate le résultat dans un style Markdown, chaque concept commence avec zzCONCEPT **IDEE**.
-- Respecte absolument la syntaxe et la casse du terme zzCONCEPT.
-- **IDEE** est une phrase courte résumant l'idée comme des "API". Elle doit pouvoir résumer et représenter l'ensemble du concept de manière abstraite et réutilisable. 
-Voici les consignes que tu dois respecter pour trouver les titres et les concepts à mettre dans les notes permanentes :
-Pour identifier et formuler efficacement les concepts :
-1. Créer des titres qui fonctionnent comme des "API" - Le titre doit pouvoir résumer et représenter l'ensemble du concept de manière abstraite et réutilisable.
-2. Orienter les notes par concept plutôt que par source - Privilégier l'organisation par idées/concepts plutôt que par auteur, livre ou projet. Cela permet de :
-- Découvrir des connexions inattendues entre différentes sources
-- Accumuler et synthétiser les connaissances sur un même concept
-- Approfondir la compréhension en confrontant différentes perspectives
-3. Utiliser des phrases complètes comme titres :
-- **Préférer les phrases déclaratives ou impératives qui formulent une affirmation claire**
-- Les questions peuvent aussi servir de titres si elles ciblent le cœur du sujet
-- Le titre doit systematiquement et obligatoirement avoir un **verbe** dans le titre
-- La casse dois être en minuscules
-- Exceptions: définitions de termes clés, plans/outlines
-4. Critères de qualité d'un concept bien identifié :
-- Il est atomique (une seule idée centrale)
-- Il peut être relié densément à d'autres concepts
-- Son titre résume clairement sa contribution
-- Il permet l'accumulation progressive des connaissances 
-                """,
-                
-                "notes.txt": """
-Tu es un modèle de langage d'IA capable de prendre des notes détaillées, concises et faciles à comprendre sur divers sujets sous forme de puces.
-Format attendu : document Markdown structuré. Les titres doivent démarrer au niveau Titre 2 (##). 
-Commence par écrire "# Synthèse.". Produit un résumé excecutif sur le contenu de **document :** en deux phrases. Style direct et concis. Pas de 'Le document explore', 'La vidéo explique', etc. Présente directement le contenu.
-Ecrit ensuite "# Notes enrichies." 
-Lorsqu'on vous fournit des **notes :** sur un **document :**, votre tâche est de :
-- Créez des notes avancées résumant les parties importantes du **document :** en te basant seulement sur chaque concept ou thème de la **notes :**.
-- Incluez toutes les informations essentielles, telles que les termes de vocabulaire et les concepts clés, qui doivent être mises en gras avec des astérisques.
-- Supprimez tout langage superflu, en vous concentrant uniquement sur les aspects critiques du passage dans le **document :**.
-- Basez strictement vos notes sur les informations fournies dans le **document :**., sans ajouter d'informations externes.
-- Assurez vous que tous les concepts ou thèmes de la **notes :** sont traité avant de terminer.
-                """
-            }
-            
-            # Écrire les prompts dans des fichiers
-            for name, content in prompts.items():
-                with open(f"{dir_path}/{name}", "w", encoding="utf-8") as file:
-                    file.write(content.strip())
-                # Ajouter également au dictionnaire de prompts
-                self.prompts[f"PROMPT_{name.split('.')[0].upper()}"] = content.strip()
-                
-            logger.info(f"Prompts par défaut créés dans {dir_path}")
-        except Exception as e:
-            logger.error(f"Erreur lors de la création des prompts par défaut: {e}")
-    
+            logger.error(f"Erreur lors du chargement des prompts: {e}. Utilisez l'option -p/--prompts-dir pour spécifier un emplacement alternatif.")
+        
     def get(self, key: str, default=None):
         """Récupère une valeur de configuration."""
         keys = key.split('.')
@@ -214,10 +140,10 @@ Lorsqu'on vous fournit des **notes :** sur un **document :**, votre tâche est d
         if prompt_key in self.prompts:
             return self.prompts[prompt_key]
         else:
-            logger.error(f"Prompt non trouvé: {name}")
-            return ""
+            logger.error(f"Prompt '{name}' non trouvé. Vérifiez que les fichiers de prompts existent dans le répertoire configuré ou utilisez l'option -p/--prompts-dir pour spécifier un emplacement alternatif.")
+            sys.exit(1)
+            return f"ERREUR: Prompt '{name}' non trouvé. Vérifiez que les fichiers de prompts existent ou utilisez l'option -p/--prompts-dir."
     
-
     @property
     def gemini_api_key(self) -> str:
         """Récupère la clé API Google Gemini."""
@@ -955,6 +881,7 @@ def main():
     parser.add_argument("input_dir", help="Répertoire contenant les fichiers d'entrée")
     parser.add_argument("output_dir", help="Répertoire pour les fichiers de sortie")
     parser.add_argument("-c", "--config", default="config.yaml", help="Chemin du fichier de configuration")
+    parser.add_argument("-p", "--prompts-dir", help="Répertoire contenant les fichiers de prompts")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Niveau de verbosité (peut être utilisé plusieurs fois)")
     args = parser.parse_args()
     
@@ -978,7 +905,7 @@ def main():
         
         # Charger la configuration et les prompts
         config = Config(args.config)
-        config.load_prompts()
+        config.load_prompts(args.prompts_dir)
         
         # Créer le processeur
         processor = Processor(config, str(input_path), str(output_path))

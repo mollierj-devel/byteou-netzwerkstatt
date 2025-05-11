@@ -1,10 +1,4 @@
-#Main contributor troubleshooting files
-in/
-out/
-makingof/
-video_metadata.json
-config.yaml
-byteou-netzwerkstatt.laststable.py
+#Main contributor files
 config.yaml
 
 #MacOS
