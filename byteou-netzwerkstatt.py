@@ -319,6 +319,9 @@ class AIGenerator:
         """
         self.provider = provider.lower()
         self.model_name = model
+        # Compteurs de tokens
+        self.tokens_input = 0
+        self.tokens_output = 0
         
         if self.provider == "openai":
             self.client = OpenAI(api_key=api_key, base_url=base_url)
@@ -359,6 +362,10 @@ class AIGenerator:
                 # Extraire le contenu généré
                 generated_content = response.choices[0].message.content.strip()
                 
+                # Compter les tokens
+                self.tokens_input += response.usage.prompt_tokens
+                self.tokens_output += response.usage.completion_tokens
+                
             elif self.provider == "gemini":
                 # Construire le prompt complet pour Gemini
                 full_prompt = f"{prompt}\n\n{content}"
@@ -368,6 +375,10 @@ class AIGenerator:
                 
                 # Extraire le contenu généré
                 generated_content = response.text.strip()
+                
+                # Estimation approximative des tokens pour Gemini (4 caractères ~ 1 token)
+                self.tokens_input += len(full_prompt) // 4
+                self.tokens_output += len(generated_content) // 4
             
             logger.info(f"Contenu généré avec succès ({len(generated_content)} caractères)")
             logger.trace(f"Début du contenu généré: {generated_content[:100]}...")
@@ -672,6 +683,7 @@ https://www.youtube.com/watch?v={video_id}
     def process_video(self, video_id: str) -> Dict[str, str]:
         """Traite une vidéo YouTube."""
         logger.info(f"Traitement de la vidéo {video_id}")
+        start_time = time.time()
         results = {}
         
         try:
@@ -746,7 +758,13 @@ https://www.youtube.com/watch?v={video_id}
             # Nettoyer les fichiers temporaires (post-traitement obligatoire)
             self.cleanup_temp_files(video_id)
             
-            logger.info(f"Traitement terminé pour {video_id}")
+            # Calculer la durée de traitement et les tokens utilisés
+            end_time = time.time()
+            duration = end_time - start_time
+            tokens_input = self.ai_generator.tokens_input
+            tokens_output = self.ai_generator.tokens_output
+            
+            logger.info(f"Traitement terminé pour {video_id} en {duration:.2f} secondes. Tokens: {tokens_input} entrée, {tokens_output} sortie, {tokens_input + tokens_output} total")
             return results
             
         except Exception as e:
@@ -885,6 +903,9 @@ def ensure_directory(path: str) -> Path:
 
 def main():
     """Point d'entrée principal du script."""
+    # Démarrer le chronomètre pour le temps total
+    start_time = time.time()
+    
     # Analyser les arguments
     parser = argparse.ArgumentParser(description="byteou-netzwerkstatt")
     parser.add_argument("input_dir", help="Répertoire contenant les fichiers d'entrée")
@@ -962,8 +983,18 @@ def main():
         
 
 
+        # Calculer la durée totale
+        end_time = time.time()
+        total_duration = end_time - start_time
+        
+        # Calculer le nombre total de tokens
+        total_tokens_input = processor.ai_generator.tokens_input
+        total_tokens_output = processor.ai_generator.tokens_output
+        total_tokens = total_tokens_input + total_tokens_output
+        
         # Afficher un résumé
-        console.print("[bold green]Traitement terminé avec succès ![/bold green]")
+        console.print(f"[bold green]Traitement terminé avec succès en {total_duration:.2f} secondes ![/bold green]")
+        console.print(f"Tokens utilisés: {total_tokens_input} entrée, {total_tokens_output} sortie, {total_tokens} total")
         console.print(f"Résultats sauvegardés dans: [blue]{output_path}[/blue]")
         
     except Exception as e:
