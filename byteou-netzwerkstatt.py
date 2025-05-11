@@ -611,7 +611,7 @@ class Processor:
             
             # Lire chaque fichier
             for file in input_path.iterdir():
-                if file.is_file():
+                if file.is_file() and not file.name.startswith('.'):
                     video_id = file.stem
                     video_ids.append(video_id)
                     logger.debug(f"ID YouTube trouvé: {video_id}")
