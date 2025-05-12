@@ -213,15 +213,24 @@ class TranscriptDownloader:
                 return full_text
                 
             except Exception as e:
+                
+                #vérification transcript indisponible
+                if "Could not retrieve a transcript" in str(e):
+                    logger.warning(f"Transcription non disponible pour {video_id} sur la plateforme Youtube")#warning ?
+                    logger.debug(f"Vous avez la possiblité de déposer celle-ci dans le dossier `out` avec le nom de fichier :  `{video_id}.transcript.txt`.")
+
+                    break #return None
+                
                 delay = base_delay * (2 ** (attempt - 1))  # Backoff exponentiel
-                logger.warning(f"Échec de la tentative {attempt}/{max_attempts}: {e}")
+                logger.info(f"Échec de la tentative {attempt}/{max_attempts}: {e}")#warning ?
                 logger.debug(f"Détails de l'erreur: {type(e).__name__}, {str(e)}")
                 
                 if attempt < max_attempts:
                     logger.info(f"Nouvelle tentative dans {delay} secondes...")
                     time.sleep(delay)
+                    
                 else:
-                    logger.error(f"Échec après {max_attempts} tentatives pour {video_id}")
+                    logger.error(f"Échec après {max_attempts} tentatives pour {video_id}: {e}")
                     logger.error(f"Exception finale: {e}", exc_info=True)
                     raise Exception(f"Impossible de récupérer la transcription après {max_attempts} tentatives: {e}")
     
