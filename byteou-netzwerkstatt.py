@@ -188,75 +188,52 @@ class TranscriptDownloader:
         self.languages = languages
         logger.trace(f"TranscriptDownloader initialisé avec les langues: {languages}")
 
-    def get_transcript(self, video_id: str) -> str:
-        """Télécharge la transcription d'une vidéo YouTube avec retry automatique."""
-        logger.debug(f"Téléchargement de la transcription pour la vidéo {video_id}")
+    def retrieve_transcript(self, video_id: str, output_dir: str) -> str:
+        """Télécharge et sauvegarde la transcription d'une vidéo YouTube avec retry automatique."""
+        logger.info(f"Téléchargement et sauvegarde de la transcription pour {video_id}")
         
         # Paramètres du retry
         max_attempts = 3
         base_delay = 2  # secondes
-        
-        # Délai initial pour laisser le temps de charger les métadonnées
         initial_delay = 1  # secondes
-        logger.debug(f"Attente de {initial_delay}s avant le chargement des métadonnées")
-        time.sleep(initial_delay)
-        
-        for attempt in range(1, max_attempts + 1):
-            try:
-                logger.info(f"Tentative {attempt}/{max_attempts} de récupération de la transcription pour {video_id}")
-                
-                transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=self.languages)
-                full_text = " ".join([item['text'] for item in transcript])
-                
-                logger.debug(f"Transcription récupérée avec succès: {len(full_text)} caractères")
-                logger.trace(f"Début de la transcription: {full_text[:100]}...")
-                return full_text
-                
-            except Exception as e:
-                
-                #vérification transcript indisponible
-                if "Could not retrieve a transcript" in str(e):
-                    logger.warning(f"Transcription non disponible pour {video_id} sur la plateforme Youtube")#warning ?
-                    logger.debug(f"Vous avez la possiblité de déposer celle-ci dans le dossier `out` avec le nom de fichier :  `{video_id}.transcript.txt`.")
-
-                    break #return None
-                
-                delay = base_delay * (2 ** (attempt - 1))  # Backoff exponentiel
-                logger.info(f"Échec de la tentative {attempt}/{max_attempts}: {e}")#warning ?
-                logger.debug(f"Détails de l'erreur: {type(e).__name__}, {str(e)}")
-                
-                if attempt < max_attempts:
-                    logger.info(f"Nouvelle tentative dans {delay} secondes...")
-                    time.sleep(delay)
-                    
-                else:
-                    logger.error(f"Échec après {max_attempts} tentatives pour {video_id}: {e}")
-                    logger.error(f"Exception finale: {e}", exc_info=True)
-                    raise Exception(f"Impossible de récupérer la transcription après {max_attempts} tentatives: {e}")
-    
-    def save_transcript(self, video_id: str, output_dir: str) -> str:
-        """Télécharge et sauvegarde la transcription d'une vidéo YouTube."""
-        logger.info(f"Téléchargement et sauvegarde de la transcription pour {video_id}")
         
         try:
-            transcript_text = self.get_transcript(video_id)
+            # Attente initiale pour les métadonnées
+            time.sleep(initial_delay)
             
-            # Assurer que le répertoire de sortie existe
-            os.makedirs(output_dir, exist_ok=True)
+            for attempt in range(1, max_attempts + 1):
+                try:
+                    logger.info(f"Tentative {attempt}/{max_attempts} pour {video_id}")
+                    transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=self.languages)
+                    full_text = " ".join([item['text'] for item in transcript])
+                    
+                    # Sauvegarde immédiate
+                    os.makedirs(output_dir, exist_ok=True)
+                    output_file = Path(output_dir) / f"{video_id}.transcript.txt"
+                    with open(output_file, "w", encoding="utf-8") as file:
+                        file.write(full_text)
+                    
+                    logger.info(f"Transcription sauvegardée dans {output_file}")
+                    return str(output_file)
+                    
+                except Exception as e:
+                    if "Could not retrieve a transcript" in str(e):
+                        logger.warning(f"Transcription non disponible pour {video_id}")
+                        logger.debug(f"Déposez la transcription manuellement dans `out/{video_id}.transcript.txt`")
+                        return None
+                    
+                    if attempt < max_attempts:
+                        delay = base_delay * (2 ** (attempt - 1))
+                        logger.info(f"Nouvelle tentative dans {delay}s...")
+                        time.sleep(delay)
+                    else:
+                        raise Exception(f"Échec après {max_attempts} tentatives: {e}")
             
-            # Créer le chemin du fichier de sortie
-            output_file = Path(output_dir) / f"{video_id}.transcript.txt"
+            return ""  # Retourne une chaîne vide si transcription indisponible
             
-            # Sauvegarder la transcription
-            with open(output_file, "w", encoding="utf-8") as file:
-                file.write(transcript_text)
-            
-            logger.info(f"Transcription sauvegardée dans {output_file}")
-            return str(output_file)
-        
         except Exception as e:
-            logger.error(f"Erreur lors de la sauvegarde de la transcription: {e}")
-            raise Exception(f"Impossible de sauvegarder la transcription pour {video_id}: {e}")
+            logger.error(f"Erreur lors de la récupération/sauvegarde: {e}")
+            raise Exception(f"Échec du traitement de la transcription pour {video_id}: {e}")
         
     def get_video_metadata(self, video_id: str) -> Dict[str, str]:
         """
@@ -708,16 +685,16 @@ https://www.youtube.com/watch?v={video_id}
             
             # Étape 1: Télécharger la transcription si elle n'existe pas déjà
             logger.debug(f"Étape 1: Vérification de l'existence de la transcription pour {video_id}")
-            transcript_file_path = Path(self.output_dir) / f"{video_id}.transcript.txt"
-            if not transcript_file_path.exists():
-                logger.debug(f"Étape 1: Téléchargement de la transcription")
-                transcript_file = self.transcript_downloader.save_transcript(video_id, self.output_dir)
+            logger.debug(f"Étape 1: Téléchargement de la transcription")
+            transcript_file = self.transcript_downloader.retrieve_transcript(video_id, self.output_dir)
+
+            if transcript_file is not None:
+                results["transcript_file"] = transcript_file
             else:
-                logger.info(f"Transcription déjà existante pour {video_id}, saut de l'étape de téléchargement.")
-                transcript_file = str(transcript_file_path)
-
-            results["transcript_file"] = transcript_file
-
+                logger.info(f"Pas de transcript, pas de traitement de {video_id}")
+                #raise Exception(f"Pas de transcript, pas de Erreur traitement de {video_id}")
+                return None
+            
             # Mettre à jour la progression à 10% après la sauvegarde de la transcription
             if hasattr(self, 'progress') and hasattr(self, 'current_video_task'):
                 self.progress.update(self.current_video_task, completed=10, description=f"[cyan]{self.current_video_number}/{self.total_videos} Traitement de {video_id} : {'Transcription sauvegardée':<30}")
