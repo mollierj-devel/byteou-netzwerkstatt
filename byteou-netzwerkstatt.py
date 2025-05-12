@@ -697,9 +697,16 @@ https://www.youtube.com/watch?v={video_id}
             metadata = self.transcript_downloader.get_video_metadata(video_id)
             results["metadata"] = metadata
             
-            # Étape 1: Télécharger la transcription
-            logger.debug(f"Étape 1: Téléchargement de la transcription")
-            transcript_file = self.transcript_downloader.save_transcript(video_id, self.output_dir)
+            # Étape 1: Télécharger la transcription si elle n'existe pas déjà
+            logger.debug(f"Étape 1: Vérification de l'existence de la transcription pour {video_id}")
+            transcript_file_path = Path(self.output_dir) / f"{video_id}.transcript.txt"
+            if not transcript_file_path.exists():
+                logger.debug(f"Étape 1: Téléchargement de la transcription")
+                transcript_file = self.transcript_downloader.save_transcript(video_id, self.output_dir)
+            else:
+                logger.info(f"Transcription déjà existante pour {video_id}, saut de l'étape de téléchargement.")
+                transcript_file = str(transcript_file_path)
+
             results["transcript_file"] = transcript_file
 
             # Mettre à jour la progression à 10% après la sauvegarde de la transcription

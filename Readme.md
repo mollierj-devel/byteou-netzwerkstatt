@@ -67,4 +67,8 @@ python ./byteou-netzwerkstatt.py -help
 #ou
 ./byteou-netzwerkstatt.py -help
 ```
+### Cas du transcript indisponible
+
+Si la transcription est indisponible disponible sur la plateforme youtube, vous avez la possiblité de déposer celle-ci dans le dossier `out` avec le nom de fichier :  `{video_id}.transcript.txt` ou avec {video_id} correspond à l'id de la vidéo Youtube.
+
 
