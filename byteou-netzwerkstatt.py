@@ -540,7 +540,7 @@ class ConceptExtractor:
             for file_path in concept_files:
                 file_name = Path(file_path).name
                 concept_name = file_name.replace(f"{video_id}.", "").replace(".concept.md", "")
-                content += f"- [[{file_name}|{concept_name}]]\n"
+                content += f"- [[{file_name}]]\n"
             
             # Sauvegarder le fichier de liaison
             with open(liaison_file, 'w', encoding='utf-8') as file:

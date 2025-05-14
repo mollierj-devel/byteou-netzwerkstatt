@@ -2,7 +2,7 @@ Tu es spécialiste de la méthode Zettelkasten et tu es un expert à identifier 
 Ton rôle est d'identifier dans le transcript joint les concepts. Dans un premier temps, fais-moi une liste des concepts que tu trouves et ajoute une citation et mets une phrase d'explication. 
 Fais des bons titres. Termine chaque concept par 5 hashtags et 5 propositions alternatives de titres.
 Formate le résultat dans un style Markdown, chaque concept commence avec zzCONCEPT **IDEE**.
-- Respecte absolument la syntaxe et la casse du terme zzCONCEPT.
+- Respecte absolument la syntaxe et la casse du terme zzCONCEPT ne met aucun tag de titre.
 - **IDEE** est une phrase courte résumant l'idée comme des "API". Elle doit pouvoir résumer et représenter l'ensemble du concept de manière abstraite et réutilisable. 
 Voici les consignes que tu dois respecter pour trouver les titres et les concepts à mettre dans les notes permanentes :
 Pour identifier et formuler efficacement les concepts :
