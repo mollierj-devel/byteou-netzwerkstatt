@@ -494,14 +494,24 @@ class ConceptExtractor:
             logger.trace(f"Détails de l'erreur:", exc_info=True)
             return []
     
-    def save_concepts(self, video_id: str, concepts: List[Dict[str, str]]) -> List[str]:
-        """Sauvegarde les concepts dans des fichiers distincts."""
+    def save_concepts(self, video_id: str, concepts: List[Dict[str, str]], metadata: Dict[str, str] = None) -> List[str]:
+        """Sauvegarde les concepts dans des fichiers distincts dans un sous-dossier."""
         logger.info(f"Sauvegarde de {len(concepts)} concepts pour {video_id}")
         concept_files = []
         
         try:
-            # Assurer que le répertoire existe
-            os.makedirs(self.output_dir, exist_ok=True)
+            # Créer le nom du sous-dossier avec le pattern "titre de la vidéo (video_id)"
+            if metadata and 'title' in metadata:
+                video_title = metadata['title']
+                safe_video_title = re.sub(r"[^\w\s\-']", "", video_title).strip()
+                folder_name = f"{safe_video_title} ({video_id})"
+            else:
+                folder_name = f"Video ({video_id})"
+            
+            # Créer le chemin du sous-dossier
+            concepts_dir = Path(self.output_dir) / folder_name
+            os.makedirs(concepts_dir, exist_ok=True)
+            logger.debug(f"Sous-dossier créé: {concepts_dir}")
             
             for concept in concepts:
                 # Créer un nom de fichier valide
@@ -511,7 +521,7 @@ class ConceptExtractor:
                 #safe_title = re.sub(r'[^\w\s-]', '', title).strip()
                 #JMT safe_title = re.sub(r'[-\s]+', '-', safe_title)
                 filename = f"{safe_title}.md"
-                file_path = Path(self.output_dir) / filename
+                file_path = concepts_dir / filename
                 
                 # Sauvegarder le concept
                 with open(file_path, 'w', encoding='utf-8') as file:
@@ -535,7 +545,6 @@ class ConceptExtractor:
             liaison_file = Path(self.output_dir) / f"{video_id}.liaison.md"
             
             content = f"# Concepts associés\n"
-            #content += "blah blah\n"
             
             for file_path in concept_files:
                 file_name = Path(file_path).name
@@ -648,8 +657,6 @@ class Processor:
         video_title = metadata.get('title', f"Video {video_id}")
         safe_title = re.sub(r"[^\w\s\-']", "", video_title).strip()
         video_author = metadata.get('author', "")
-        channel_id = metadata.get('channel_id', "")
-        # channel_id = 
         
         # Construire l'en-tête
         header = f"""---
@@ -759,7 +766,7 @@ https://www.youtube.com/watch?v={video_id}
             # Étape 3: Extraire les concepts
             logger.debug(f"Étape 3: Extraction des concepts")
             concepts = self.concept_extractor.extract_concepts(str(zettelkasten_file))
-            concept_files = self.concept_extractor.save_concepts(video_id, concepts)
+            concept_files = self.concept_extractor.save_concepts(video_id, concepts, metadata)
             results["concept_files"] = concept_files
             logger.trace(f"Concepts extraits et sauvegardés: {len(concept_files)} fichiers")
             
