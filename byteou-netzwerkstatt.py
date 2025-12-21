@@ -204,8 +204,10 @@ class TranscriptDownloader:
             for attempt in range(1, max_attempts + 1):
                 try:
                     logger.info(f"Tentative {attempt}/{max_attempts} pour {video_id}")
-                    transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=self.languages)
-                    full_text = " ".join([item['text'] for item in transcript])
+                    ytt = YouTubeTranscriptApi()
+                    transcript = ytt.fetch(video_id,languages=self.languages)
+                    #transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=self.languages)
+                    full_text = " ".join([item.text for item in transcript])
                     
                     # Sauvegarde immédiate
                     os.makedirs(output_dir, exist_ok=True)
@@ -217,6 +219,7 @@ class TranscriptDownloader:
                     return str(output_file)
                     
                 except Exception as e:
+                    logger.debug(f"Boucle d'exeption, erreur : {str(e)}")
                     if "Could not retrieve a transcript" in str(e):
                         logger.warning(f"Transcription non disponible pour {video_id}")
                         logger.debug(f"Déposez la transcription manuellement dans `out/{video_id}.transcript.txt`")

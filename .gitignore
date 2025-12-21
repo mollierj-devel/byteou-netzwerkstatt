@@ -1,6 +1,9 @@
 #Main contributor files
 config.yaml
 
+in/
+out/
+
 #MacOS
 .DS_Store
 
