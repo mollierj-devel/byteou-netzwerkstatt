@@ -206,7 +206,6 @@ class TranscriptDownloader:
                     logger.info(f"Tentative {attempt}/{max_attempts} pour {video_id}")
                     ytt = YouTubeTranscriptApi()
                     transcript = ytt.fetch(video_id,languages=self.languages)
-                    #transcript = YouTubeTranscriptApi.get_transcript(video_id, languages=self.languages)
                     full_text = " ".join([item.text for item in transcript])
                     
                     # Sauvegarde immédiate
@@ -256,9 +255,17 @@ class TranscriptDownloader:
             
             # Options pour yt-dlp
             ytdl_options = {
-                'quiet': True,
-                'skip_download': True,
-                'force_json': True
+                "quiet": True,
+                "skip_download": True,
+                "force_json": True,
+                "no_warnings": True,
+                # patch EJS https://github.com/yt-dlp/yt-dlp/wiki/EJS pour résoudre : //github.com/yt-dlp/yt-dlp/issues/12482
+                "js_runtimes": {
+                    "deno": {},
+                    "node": {},
+                },
+                # Optionnel si tu veux autoriser les EJS distants
+                "remote_components": ["ejs:github"],
             }
             
             # Extraction des métadonnées
@@ -504,13 +511,14 @@ class ConceptExtractor:
         
         try:
             # Créer le nom du sous-dossier avec le pattern "titre de la vidéo (video_id)"
-            if metadata and 'title' in metadata:
-                video_title = metadata['title']
-                safe_video_title = re.sub(r"[^\w\s\-']", "", video_title).strip()
-                folder_name = f"{safe_video_title} ({video_id})"
-            else:
-                folder_name = f"Video ({video_id})"
-            
+            #if metadata and 'title' in metadata:
+            #    video_title = metadata['title']
+            #    safe_video_title = re.sub(r"[^\w\s\-']", "", video_title).strip()
+            #    folder_name = f"{safe_video_title} ({video_id})"
+            #else:
+            #    folder_name = f"Video ({video_id})"
+            folder_name = f"jardin_concepts_zettlecasten"
+
             # Créer le chemin du sous-dossier
             concepts_dir = Path(self.output_dir) / folder_name
             os.makedirs(concepts_dir, exist_ok=True)
@@ -523,7 +531,7 @@ class ConceptExtractor:
             
                 #safe_title = re.sub(r'[^\w\s-]', '', title).strip()
                 #JMT safe_title = re.sub(r'[-\s]+', '-', safe_title)
-                filename = f"{safe_title}.md"
+                filename = f"{video_id}_{safe_title}.md"
                 file_path = concepts_dir / filename
                 
                 # Sauvegarder le concept
@@ -552,7 +560,7 @@ class ConceptExtractor:
             for file_path in concept_files:
                 file_name = Path(file_path).name
                 concept_name = file_name.replace(f"{video_id}.", "").replace(".concept.md", "")
-                content += f"- [[{file_name}]]\n"
+                content += f"- [[./jardin_concepts_zettlecasten/{file_name}]]\n"
             
             # Sauvegarder le fichier de liaison
             with open(liaison_file, 'w', encoding='utf-8') as file:
@@ -815,7 +823,7 @@ https://www.youtube.com/watch?v={video_id}
             #safe_video_title = re.sub(r'[^\w\s-]', '', video_title).strip()
 
             # Créer le fichier maître
-            master_file = Path(self.output_dir) / f"_{safe_video_title}.md"
+            master_file = Path(self.output_dir) / f"{video_id}_{safe_video_title}.md"
             
             with open(master_file, 'w', encoding='utf-8') as master:
                 # Titre

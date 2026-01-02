@@ -44,6 +44,11 @@ En date de Mai 2025 les deux modèles recommandés sont Claude3.7 ou Gemini2.0 F
 
 ## Installation
 
+Préreuqis un runtime javascript (deno - recommandé, nodejs)
+```bash
+brew install deno
+```
+
 ```bash
 git clone https://github.com/mollierj-devel/byteou-netzwerkstatt.git
 cd byteou-netzwerkstatt
