@@ -577,11 +577,12 @@ class ConceptExtractor:
 # Processeur principal
 class Processor:
  
-    def __init__(self, config: Config, input_dir: str, output_dir: str):
+    def __init__(self, config: Config, input_dir: str, output_dir: str, keep_transcripts: bool = False):
         """Initialise le processeur avec la configuration et les répertoires."""
         self.config = config
         self.input_dir = input_dir
         self.output_dir = output_dir
+        self.keep_transcripts = keep_transcripts
         
         # Variables pour le suivi du temps et des tokens
         self.video_start_time = time.time()
@@ -896,12 +897,14 @@ https://www.youtube.com/watch?v={video_id}
         
         # Liste des fichiers temporaires à format fixe (sans notes.md qui peut être multiple)
         files_to_remove = [
-            f"{video_id}.transcript.txt",
             f"{video_id}.md",
             f"{video_id}.notes.md",
             f"{video_id}.zettelkasten.md",
             f"{video_id}.liaison.md"
         ]
+        
+        if not self.keep_transcripts:
+            files_to_remove.append(f"{video_id}.transcript.txt")
         
         # Supprimer les fichiers à format fixe
         for file_name in files_to_remove:
@@ -949,6 +952,7 @@ def main():
     parser.add_argument("-c", "--config", default="config.yaml", help="Chemin du fichier de configuration")
     parser.add_argument("-p", "--prompts-dir", help="Répertoire contenant les fichiers de prompts")
     parser.add_argument("-v", "--verbose", action="count", default=0, help="Niveau de verbosité (peut être utilisé plusieurs fois)")
+    parser.add_argument("--keep-transcripts", action="store_true", help="Conserver les fichiers de transcription (.transcript.txt)")
     args = parser.parse_args()
     
     # Configurer le logger
@@ -974,7 +978,7 @@ def main():
         config.load_prompts(args.prompts_dir)
         
         # Créer le processeur
-        processor = Processor(config, str(input_path), str(output_path))
+        processor = Processor(config, str(input_path), str(output_path), keep_transcripts=args.keep_transcripts)
         
         # Obtenir les IDs de vidéos
         video_ids = processor.get_video_ids()
