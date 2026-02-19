@@ -190,6 +190,13 @@ class TranscriptDownloader:
 
     def retrieve_transcript(self, video_id: str, output_dir: str) -> str:
         """Télécharge et sauvegarde la transcription d'une vidéo YouTube avec retry automatique."""
+        
+        # Vérifier si le fichier existe déjà
+        output_file = Path(output_dir) / f"{video_id}.transcript.txt"
+        if output_file.exists():
+            logger.info(f"Transcription déjà existante pour {video_id}, utilisation du fichier existant")
+            return str(output_file)
+        
         logger.info(f"Téléchargement et sauvegarde de la transcription pour {video_id}")
         
         # Paramètres du retry
